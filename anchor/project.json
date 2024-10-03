@@ -1,0 +1,43 @@
+{
+  "name": "anchor",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "anchor/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "anchor",
+        "commands": ["anchor test"],
+        "parallel": false
+      }
+    },
+    "anchor": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "anchor",
+        "commands": ["anchor"],
+        "parallel": false
+      }
+    },
+    "localnet": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "anchor",
+        "commands": ["anchor localnet"],
+        "parallel": false
+      }
+    },
+    "jest": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "anchor/jest.config.ts"
+      }
+    }
+  }
+}

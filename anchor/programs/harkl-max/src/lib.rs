@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-declare_id!("5m94oNVhSyFesxHorRsDCAv7VYYxAcftmDc1sAQa8JPh");
+declare_id!("HmdQhKEj9wC5ztUTPAqUtB1E1fqWYqgFxeNfPLDwXARu");
 
 #[program]
 pub mod harkl_max {

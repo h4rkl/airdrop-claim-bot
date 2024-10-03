@@ -6,7 +6,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-harkl_max = "5m94oNVhSyFesxHorRsDCAv7VYYxAcftmDc1sAQa8JPh"
+harkl_max = "HmdQhKEj9wC5ztUTPAqUtB1E1fqWYqgFxeNfPLDwXARu"
 
 [registry]
 url = "https://api.apr.dev"

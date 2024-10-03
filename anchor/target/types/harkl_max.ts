@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/harkl_max.json`.
  */
 export type HarklMax = {
-  "address": "5m94oNVhSyFesxHorRsDCAv7VYYxAcftmDc1sAQa8JPh",
+  "address": "HmdQhKEj9wC5ztUTPAqUtB1E1fqWYqgFxeNfPLDwXARu",
   "metadata": {
     "name": "harklMax",
     "version": "0.1.0",

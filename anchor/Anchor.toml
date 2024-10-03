@@ -6,13 +6,13 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-harkl_max = "HmdQhKEj9wC5ztUTPAqUtB1E1fqWYqgFxeNfPLDwXARu"
+harkl_max = "HQ9qykbDvtGPm5LtLzCyn25ntRwi9DePTevwA6o9mXAZ"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
@@ -24,6 +24,7 @@ shutdown_wait = 2000
 upgradeable = false
 
 [test.validator]
-bind_address = "127.0.0.1"
-ledger = ".anchor/test-ledger"
-rpc_port = 8899
+url = "https://api.devnet.solana.com"
+# bind_address = "127.0.0.1"
+# ledger = ".anchor/test-ledger"
+# rpc_port = 8899

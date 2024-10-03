@@ -7,8 +7,8 @@
     "anchor:clean": "nx run anchor:anchor clean",
     "anchor:build": "nx run anchor:anchor build",
     "anchor:deploy": "nx run anchor:anchor deploy",
-    "anchor:localnet": "nx run anchor:anchor localnet",
-    "anchor:test": "nx run anchor:anchor test",
+    "anchor:localnet": "nx run anchor:localnet",
+    "anchor:test": "nx run anchor:test",
     "feature": "nx generate @solana-developers/preset-react:feature",
     "build": "nx build web",
     "dev": "nx serve web"

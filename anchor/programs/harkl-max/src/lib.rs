@@ -62,13 +62,13 @@ pub struct LoadTokenPool<'info> {
         constraint = admin_token_account.mint == token_mint.key(),
         constraint = admin_token_account.owner == admin.key()
     )]
-    pub admin_token_account: Account<'info, TokenAccount>,
+    pub admin_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = token_pool.mint == token_mint.key()
     )]
-    pub token_pool: Account<'info, TokenAccount>,
-    pub token_mint: Account<'info, Mint>,
+    pub token_pool: Box<Account<'info, TokenAccount>>,
+    pub token_mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
 }
 
@@ -81,18 +81,19 @@ pub struct Airdrop<'info> {
         associated_token::mint = token_mint,
         associated_token::authority = user
     )]
-    pub user_token_account: Account<'info, TokenAccount>,
+    pub user_token_account: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         constraint = token_pool.mint == token_mint.key()
     )]
-    pub token_pool: Account<'info, TokenAccount>,
+    pub token_pool: Box<Account<'info, TokenAccount>>,
     #[account(
         seeds = [b"token_pool_authority", token_mint.key().as_ref()],
         bump
     )]
+    /// CHECK: This is not dangerous because we don't read or write from this account
     pub token_pool_authority: AccountInfo<'info>,
-    pub token_mint: Account<'info, Mint>,
+    pub token_mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,

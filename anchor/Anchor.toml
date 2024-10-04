@@ -12,7 +12,7 @@ harkl_max = "HQ9qykbDvtGPm5LtLzCyn25ntRwi9DePTevwA6o9mXAZ"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
@@ -24,7 +24,7 @@ shutdown_wait = 2000
 upgradeable = false
 
 [test.validator]
-url = "https://api.devnet.solana.com"
-# bind_address = "127.0.0.1"
-# ledger = ".anchor/test-ledger"
-# rpc_port = 8899
+# url = "https://api.devnet.solana.com"
+bind_address = "127.0.0.1"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899

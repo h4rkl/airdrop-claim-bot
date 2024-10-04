@@ -1,101 +1,118 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{associated_token::AssociatedToken, token::{self, Mint, Token, TokenAccount, Transfer}};
+use anchor_spl::token::{self, TokenAccount, Token, Mint, Transfer};
 
 declare_id!("HQ9qykbDvtGPm5LtLzCyn25ntRwi9DePTevwA6o9mXAZ");
 
 #[program]
-pub mod harkl_max {
+mod airdrop {
     use super::*;
 
-    pub fn load_token_pool(ctx: Context<LoadTokenPool>, amount: u64) -> Result<()> {
-        // Transfer tokens from the admin to the token pool account
-        let transfer_instruction = Transfer {
-            from: ctx.accounts.admin_token_account.to_account_info(),
-            to: ctx.accounts.token_pool.to_account_info(),
-            authority: ctx.accounts.admin.to_account_info(),
-        };
+    // Initialize the airdrop pool account with a certain amount of tokens
+    pub fn initialize_pool(ctx: Context<InitializePool>, amount: u64) -> Result<()> {
+        let pool = &mut ctx.accounts.pool;
+        pool.authority = *ctx.accounts.authority.key;
+        pool.bump = ctx.bumps.pool;
 
+        // Transfer the specified amount of tokens to the airdrop pool
         token::transfer(
-            CpiContext::new(
-                ctx.accounts.token_program.to_account_info(),
-                transfer_instruction,
-            ),
+            ctx.accounts.into_transfer_to_pool_context(),
             amount,
         )?;
 
         Ok(())
     }
 
-    pub fn airdrop(ctx: Context<Airdrop>, amount: u64) -> Result<()> {
-        let token_mint_key = ctx.accounts.token_mint.key();
-        let seeds = &[
-            b"token_pool_authority",
-            token_mint_key.as_ref(),
-            &[ctx.bumps.token_pool_authority],
-        ];
-        
-        let transfer_instruction = Transfer {
-            from: ctx.accounts.token_pool.to_account_info(),
-            to: ctx.accounts.user_token_account.to_account_info(),
-            authority: ctx.accounts.token_pool_authority.to_account_info(),
-        };
-    
+    // Allow users to claim a specified amount of tokens
+    pub fn claim_tokens(ctx: Context<ClaimTokens>, amount: u64) -> Result<()> {
+        let user_claim = &mut ctx.accounts.user_claim;
+
+        // Check if the user has already claimed tokens
+        require!(!user_claim.has_claimed, CustomError::AlreadyClaimed);
+
+        // Mark the user as having claimed their tokens
+        user_claim.has_claimed = true;
+
+        // Transfer tokens from the pool to the user
         token::transfer(
-            CpiContext::new_with_signer(
-                ctx.accounts.token_program.to_account_info(),
-                transfer_instruction,
-                &[seeds],
-            ),
+            ctx.accounts.into_transfer_to_user_context(),
             amount,
         )?;
-    
+
         Ok(())
     }
 }
 
-#[derive(Accounts)]
-pub struct LoadTokenPool<'info> {
-    #[account(mut)]
-    pub admin: Signer<'info>,
-    #[account(
-        mut,
-        constraint = admin_token_account.mint == token_mint.key(),
-        constraint = admin_token_account.owner == admin.key()
-    )]
-    pub admin_token_account: Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        constraint = token_pool.mint == token_mint.key()
-    )]
-    pub token_pool: Box<Account<'info, TokenAccount>>,
-    pub token_mint: Box<Account<'info, Mint>>,
-    pub token_program: Program<'info, Token>,
+// Define the account structures
+#[account]
+pub struct AirdropPool {
+    pub authority: Pubkey,   // The authority (admin) of the pool
+    pub bump: u8,            // PDA bump
 }
 
+#[account]
+pub struct UserClaim {
+    pub has_claimed: bool,
+}
+
+// Context for initializing the airdrop pool
 #[derive(Accounts)]
-pub struct Airdrop<'info> {
+pub struct InitializePool<'info> {
+    #[account(init, payer = authority, space = 8 + 32 + 1, seeds = [b"airdrop_pool"], bump)]
+    pub pool: Account<'info, AirdropPool>,
     #[account(mut)]
-    pub user: Signer<'info>,
-    #[account(
-        mut,
-        associated_token::mint = token_mint,
-        associated_token::authority = user
-    )]
-    pub user_token_account: Box<Account<'info, TokenAccount>>,
-    #[account(
-        mut,
-        constraint = token_pool.mint == token_mint.key()
-    )]
-    pub token_pool: Box<Account<'info, TokenAccount>>,
-    #[account(
-        seeds = [b"token_pool_authority", token_mint.key().as_ref()],
-        bump
-    )]
-    /// CHECK: This is not dangerous because we don't read or write from this account
-    pub token_pool_authority: AccountInfo<'info>,
-    pub token_mint: Box<Account<'info, Mint>>,
+    pub authority: Signer<'info>,
+    #[account(mut)]
+    pub from: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub pool_token_account: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+}
+
+impl<'info> InitializePool<'info> {
+    fn into_transfer_to_pool_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
+            from: self.from.to_account_info().clone(),
+            to: self.pool_token_account.to_account_info().clone(),
+            authority: self.authority.to_account_info().clone(),
+        };
+        CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
+    }
+}
+
+// Context for claiming tokens
+#[derive(Accounts)]
+pub struct ClaimTokens<'info> {
+    #[account(mut, seeds = [b"airdrop_pool"], bump = pool.bump)]
+    pub pool: Account<'info, AirdropPool>,
+    #[account(init_if_needed, payer = user, space = 8 + 1, seeds = [user.key().as_ref(), b"user_claim"], bump)]
+    pub user_claim: Account<'info, UserClaim>,
+    #[account(mut)]
+    pub pool_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user_token_account: Account<'info, TokenAccount>,
+    #[account(mut)]
+    pub user: Signer<'info>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
+}
+
+impl<'info> ClaimTokens<'info> {
+    fn into_transfer_to_user_context(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        let cpi_accounts = Transfer {
+            from: self.pool_token_account.to_account_info().clone(),
+            to: self.user_token_account.to_account_info().clone(),
+            authority: self.pool.to_account_info().clone(),
+        };
+        CpiContext::new(self.token_program.to_account_info().clone(), cpi_accounts)
+    }
+}
+
+// Custom error for handling already claimed tokens
+#[error_code]
+pub enum CustomError {
+    #[msg("User has already claimed their tokens.")]
+    AlreadyClaimed,
 }

@@ -9,7 +9,6 @@ import {
 import {
   TOKEN_PROGRAM_ID,
   createAccount,
-  createAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
   createMint,
   getAccount,
@@ -18,10 +17,11 @@ import {
 } from '@solana/spl-token';
 import { Airdrop } from '../target/types/airdrop';
 
+const MINT_AIRDROP_POOL = "mint_airdrop_pool";
+
 // Configure the provider to use the local cluster
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
-const feePayer = provider.wallet as anchor.Wallet;
 
 // Load the program
 const program = anchor.workspace.Airdrop as Program<Airdrop>;
@@ -80,11 +80,13 @@ describe('Airdrop Program', () => {
       userAccount.publicKey
     );
     // Fund the pool with some tokens
-    await mintTokens(
+    await mintTo(
+      provider.connection,
       poolOwner,
       mint,
       poolOwnerTokenAccount,
-      new anchor.BN(1000000)
+      poolOwner.publicKey,
+      tolamports(1000000)
     );
     const balance = await provider.connection.getTokenAccountBalance(
       poolOwnerTokenAccount
@@ -100,9 +102,8 @@ describe('Airdrop Program', () => {
   it('Initializes the airdrop pool', async () => {
     const [poolPDA] = await anchor.web3.PublicKey.findProgramAddress(
       [
-        poolOwner.publicKey.toBuffer(),
-        program.programId.toBuffer(),
-        Buffer.from('airdrop_pool'),
+        mint.toBuffer(),
+        Buffer.from(MINT_AIRDROP_POOL),
       ],
       program.programId
     );
@@ -121,7 +122,7 @@ describe('Airdrop Program', () => {
     await provider.sendAndConfirm(tx, [poolOwner]);
 
     await program.methods
-      .initializePool(new anchor.BN(600000))
+      .initializePool(new anchor.BN(tolamports(600000)))
       .accountsStrict({
         authority: poolOwner.publicKey,
         pool: poolPDA,
@@ -139,15 +140,15 @@ describe('Airdrop Program', () => {
 
     // Check pool token account balance
     const poolTokenAccountInfo = await getAccount(provider.connection, poolTokenAccount);
-    expect(poolTokenAccountInfo.amount).toBe(BigInt(600000));
+    expect(poolTokenAccountInfo.amount).toBe(BigInt(tolamports(600000)));
 
     // Check pool owner token account balance
     const poolOwnerTokenAccountInfo = await getAccount(provider.connection, poolOwnerTokenAccount);
-    expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(400000));
+    expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(tolamports(400000)));
 
     // Verify PDA
     const [expectedPoolPDA, _] = await PublicKey.findProgramAddressSync(
-      [ poolOwner.publicKey.toBuffer(), program.programId.toBuffer(), Buffer.from('airdrop_pool') ],
+      [ mint.toBuffer(), Buffer.from(MINT_AIRDROP_POOL) ],
       program.programId
     );
     expect(poolPDA.equals(expectedPoolPDA)).toBe(true);
@@ -159,7 +160,7 @@ describe('Airdrop Program', () => {
   //   await provider.connection.requestAirdrop(userAccount.publicKey, LAMPORTS_PER_SOL);
 
   //   const [poolPDA, _] = await PublicKey.findProgramAddressSync(
-  //     [Buffer.from("airdrop_pool")],
+  //     [Buffer.from("mint_airdrop_pool")],
   //     program.programId
   //   );
 
@@ -169,8 +170,8 @@ describe('Airdrop Program', () => {
   //   );
 
   //   await program.methods
-  //     .claimTokens(new anchor.BN(1000))
-  //     .accounts({
+  //     .claimTokens(tolamports(1000))
+  //     .accountsStrict({
   //       pool: poolPDA,
   //       userClaim: userClaimPDA,
   //       poolTokenAccount: poolTokenAccount,
@@ -178,7 +179,6 @@ describe('Airdrop Program', () => {
   //       user: userAccount.publicKey,
   //       tokenProgram: TOKEN_PROGRAM_ID,
   //       systemProgram: SystemProgram.programId,
-  //       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
   //     })
   //     .signers([userAccount])
   //     .rpc();
@@ -186,21 +186,8 @@ describe('Airdrop Program', () => {
   //   const userClaimData = await program.account.userClaim.fetch(userClaimPDA);
   //   expect(userClaimData.hasClaimed).toBe(true);
   // });
-
-  // Helper function to mint tokens
-  async function mintTokens(
-    owner: Keypair,
-    mint: PublicKey,
-    mintAccount: PublicKey,
-    amount: anchor.BN
-  ): Promise<void> {
-    await mintTo(
-      provider.connection,
-      owner,
-      mint,
-      mintAccount,
-      owner.publicKey,
-      amount
-    );
-  }
 });
+
+function tolamports(amount: number): anchor.BN {
+  return amount * LAMPORTS_PER_SOL;
+}

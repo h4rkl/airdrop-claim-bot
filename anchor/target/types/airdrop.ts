@@ -32,8 +32,17 @@ export type Airdrop = {
           "pda": {
             "seeds": [
               {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
                 "kind": "const",
                 "value": [
+                  109,
+                  105,
+                  110,
+                  116,
+                  95,
                   97,
                   105,
                   114,
@@ -92,16 +101,15 @@ export type Airdrop = {
           "signer": true
         },
         {
+          "name": "mint"
+        },
+        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -136,48 +144,16 @@ export type Airdrop = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "authority"
+                "path": "mint"
               },
               {
                 "kind": "const",
                 "value": [
-                  243,
-                  169,
-                  89,
-                  146,
-                  86,
-                  56,
-                  144,
-                  169,
-                  32,
-                  223,
-                  205,
-                  10,
-                  72,
-                  176,
-                  73,
-                  31,
-                  21,
-                  47,
-                  11,
                   109,
-                  43,
-                  185,
-                  1,
-                  5,
-                  204,
-                  61,
-                  11,
-                  38,
-                  194,
-                  173,
-                  208,
-                  66
-                ]
-              },
-              {
-                "kind": "const",
-                "value": [
+                  105,
+                  110,
+                  116,
+                  95,
                   97,
                   105,
                   114,

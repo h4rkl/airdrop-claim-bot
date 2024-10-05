@@ -11,9 +11,8 @@ mod airdrop {
     pub fn initialize_pool(ctx: Context<InitializePool>, amount: u64) -> Result<()> {
         let (pool_pda, _bump) = Pubkey::find_program_address(
             &[
-                ctx.accounts.authority.key.as_ref(),
-                crate::ID.as_ref(),
-                b"airdrop_pool",
+                ctx.accounts.mint.key().as_ref(),
+                b"mint_airdrop_pool",
             ],
             &crate::ID,
         );
@@ -42,7 +41,6 @@ mod airdrop {
         Ok(())
     }
 
-    // Allow users to claim a specified amount of tokens
     pub fn claim_tokens(ctx: Context<ClaimTokens>, amount: u64) -> Result<()> {
         let user_claim = &mut ctx.accounts.user_claim;
 
@@ -75,7 +73,7 @@ pub struct UserClaim {
 pub struct InitializePool<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(init, payer = authority, space = 8 + 32, seeds = [authority.key().as_ref(), crate::ID.as_ref(), b"airdrop_pool"], bump)]
+    #[account(init, payer = authority, space = 8 + 32, seeds = [mint.key().as_ref(), b"mint_airdrop_pool"], bump)]
     pub pool: Account<'info, AirdropPool>,
     #[account(mut)]
     pub from: Account<'info, TokenAccount>,
@@ -100,7 +98,7 @@ impl<'info> InitializePool<'info> {
 // Context for claiming tokens
 #[derive(Accounts)]
 pub struct ClaimTokens<'info> {
-    #[account(mut, seeds = [b"airdrop_pool"], bump)]
+    #[account(mut, seeds = [mint.key().as_ref(), b"mint_airdrop_pool"], bump)]
     pub pool: Account<'info, AirdropPool>,
     #[account(init_if_needed, payer = user, space = 8 + 1, seeds = [user.key().as_ref(), b"user_claim"], bump)]
     pub user_claim: Account<'info, UserClaim>,
@@ -110,9 +108,9 @@ pub struct ClaimTokens<'info> {
     pub user_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
+    pub mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> ClaimTokens<'info> {

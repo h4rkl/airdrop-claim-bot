@@ -11,8 +11,6 @@ import {
   createAccount,
   createMint,
   getAccount,
-  getAssociatedTokenAddress,
-  getMint,
   mintTo,
 } from '@solana/spl-token';
 import { Airdrop } from '../target/types/airdrop';

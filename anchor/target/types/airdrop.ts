@@ -28,7 +28,6 @@ export type Airdrop = {
       "accounts": [
         {
           "name": "pool",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -61,35 +60,43 @@ export type Airdrop = {
           }
         },
         {
-          "name": "userClaim",
+          "name": "poolTokenAccount",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "user"
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
               },
               {
                 "kind": "const",
                 "value": [
-                  117,
-                  115,
-                  101,
-                  114,
-                  95,
-                  99,
+                  112,
+                  111,
+                  111,
                   108,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
                   97,
-                  105,
-                  109
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116
                 ]
               }
             ]
           }
-        },
-        {
-          "name": "poolTokenAccount",
-          "writable": true
         },
         {
           "name": "userTokenAccount",
@@ -177,7 +184,42 @@ export type Airdrop = {
         },
         {
           "name": "poolTokenAccount",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "mint"
@@ -212,19 +254,6 @@ export type Airdrop = {
         85,
         148
       ]
-    },
-    {
-      "name": "userClaim",
-      "discriminator": [
-        228,
-        142,
-        195,
-        181,
-        228,
-        147,
-        32,
-        209
-      ]
     }
   ],
   "errors": [
@@ -253,18 +282,6 @@ export type Airdrop = {
           {
             "name": "authority",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "userClaim",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "hasClaimed",
-            "type": "bool"
           }
         ]
       }

@@ -9,7 +9,6 @@ import {
 import {
   TOKEN_PROGRAM_ID,
   createAccount,
-  createAssociatedTokenAccountInstruction,
   createMint,
   getAccount,
   getAssociatedTokenAddress,
@@ -17,7 +16,7 @@ import {
 } from '@solana/spl-token';
 import { Airdrop } from '../target/types/airdrop';
 
-const MINT_AIRDROP_POOL = "mint_airdrop_pool";
+const MINT_AIRDROP_POOL = 'mint_airdrop_pool';
 
 // Configure the provider to use the local cluster
 const provider = anchor.AnchorProvider.env();
@@ -33,29 +32,25 @@ describe('Airdrop Program', () => {
   let mint: PublicKey;
   let userAccount: Keypair;
   let userTokenAccount: PublicKey;
+  let poolTokenAccount: PublicKey;
+  let poolPDA: PublicKey;
 
   // Before all tests, set up accounts and mint tokens
   beforeAll(async () => {
-    // Set up the pool account
     poolOwner = Keypair.generate();
     userAccount = Keypair.generate();
-    const accounts = await Promise.all(
-      [
-        { label: 'poolOwner', publicKey: poolOwner.publicKey },
-        { label: 'userAccount', publicKey: userAccount.publicKey },
-      ].map(async ({ label, publicKey }) =>
-        provider.connection
-          .confirmTransaction({
-            ...(await provider.connection.getLatestBlockhash('confirmed')),
-            signature: await provider.connection.requestAirdrop(
-              publicKey,
-              LAMPORTS_PER_SOL
-            ),
-          })
-          .then(() => label)
-      )
+
+    // Airdrop SOL to pool owner and user
+    await Promise.all(
+      [poolOwner, userAccount].map(async (keypair) => {
+        await provider.connection.confirmTransaction(
+          await provider.connection.requestAirdrop(
+            keypair.publicKey,
+            LAMPORTS_PER_SOL
+          )
+        );
+      })
     );
-    console.log('Airdropped SOL to accounts:', accounts);
 
     // Create a mint
     mint = await createMint(
@@ -66,19 +61,9 @@ describe('Airdrop Program', () => {
       9
     );
 
-    // Create token accounts for the pool and the user
-    poolOwnerTokenAccount = await createAccount(
-      provider.connection,
-      poolOwner,
-      mint,
-      poolOwner.publicKey
-    );
-    userTokenAccount = await createAccount(
-      provider.connection,
-      userAccount,
-      mint,
-      userAccount.publicKey
-    );
+    poolOwnerTokenAccount = await createAccount(provider.connection, poolOwner, mint, poolOwner.publicKey);
+    userTokenAccount = await createAccount(provider.connection, userAccount, mint, userAccount.publicKey);
+
     // Fund the pool with some tokens
     await mintTo(
       provider.connection,
@@ -86,43 +71,31 @@ describe('Airdrop Program', () => {
       mint,
       poolOwnerTokenAccount,
       poolOwner.publicKey,
-      tolamports(1000000)
+      toLamports(1000000)
     );
-    const balance = await provider.connection.getTokenAccountBalance(
-      poolOwnerTokenAccount
+
+    // Calculate the PDA for the pool
+    [poolPDA] = PublicKey.findProgramAddressSync(
+      [mint.toBuffer(), Buffer.from(MINT_AIRDROP_POOL)],
+      program.programId
     );
-    console.log(
-      `Token balance: ${
-        balance.value.uiAmountString
-      } tokens of ${mint.toString()}`
-    );
+
+    // Get the associated token address for the pool PDA
+    poolTokenAccount = await getAssociatedTokenAddress(mint, poolPDA, true);
+
+    console.log('Pool PDA:', poolPDA.toString());
+    console.log('Pool Token Account:', poolTokenAccount.toString());
+    console.log('Pool Owner Token Account:', poolOwnerTokenAccount.toString());
+    console.log('User Token Account:', userTokenAccount.toString());
+    console.log('User Account:', userAccount.publicKey.toString());
+    console.log('Mint:', mint.toString());
+    console.log('Program ID:', program.programId.toString());
   });
 
   // Test initializing the pool
   it('Initializes the airdrop pool', async () => {
-    const [poolPDA] = await anchor.web3.PublicKey.findProgramAddress(
-      [
-        mint.toBuffer(),
-        Buffer.from(MINT_AIRDROP_POOL),
-      ],
-      program.programId
-    );
-    const poolTokenAccount = await getAssociatedTokenAddress(
-      mint,
-      poolPDA,
-      true
-    );
-    const createATAIx = createAssociatedTokenAccountInstruction(
-      poolOwner.publicKey,
-      poolTokenAccount,
-      poolPDA,
-      mint
-    );
-    const tx = new anchor.web3.Transaction().add(createATAIx);
-    await provider.sendAndConfirm(tx, [poolOwner]);
-
     await program.methods
-      .initializePool(new anchor.BN(tolamports(600000)))
+      .initializePool(new anchor.BN(toLamports(600000)))
       .accountsStrict({
         authority: poolOwner.publicKey,
         pool: poolPDA,
@@ -135,59 +108,46 @@ describe('Airdrop Program', () => {
       .signers([poolOwner])
       .rpc();
 
+    // Fetch the pool account data and check that the authority is set correctly
     const poolAccountData = await program.account.airdropPool.fetch(poolPDA);
     expect(poolAccountData.authority.equals(poolOwner.publicKey)).toBe(true);
 
     // Check pool token account balance
     const poolTokenAccountInfo = await getAccount(provider.connection, poolTokenAccount);
-    expect(poolTokenAccountInfo.amount).toBe(BigInt(tolamports(600000)));
+    expect(poolTokenAccountInfo.amount).toBe(BigInt(toLamports(600000)));
 
     // Check pool owner token account balance
     const poolOwnerTokenAccountInfo = await getAccount(provider.connection, poolOwnerTokenAccount);
-    expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(tolamports(400000)));
-
-    // Verify PDA
-    const [expectedPoolPDA, _] = await PublicKey.findProgramAddressSync(
-      [ mint.toBuffer(), Buffer.from(MINT_AIRDROP_POOL) ],
-      program.programId
-    );
-    expect(poolPDA.equals(expectedPoolPDA)).toBe(true);
+    expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(toLamports(400000)));
   });
-
-  // Test claiming tokens
-  // it('Claims tokens from the airdrop pool', async () => {
-  //   userAccount = Keypair.generate();
-  //   await provider.connection.requestAirdrop(userAccount.publicKey, LAMPORTS_PER_SOL);
-
-  //   const [poolPDA, _] = await PublicKey.findProgramAddressSync(
-  //     [Buffer.from("mint_airdrop_pool")],
-  //     program.programId
-  //   );
-
-  //   const [userClaimPDA, __] = await PublicKey.findProgramAddressSync(
-  //     [userAccount.publicKey.toBuffer(), Buffer.from("user_claim")],
-  //     program.programId
-  //   );
-
-  //   await program.methods
-  //     .claimTokens(tolamports(1000))
-  //     .accountsStrict({
-  //       pool: poolPDA,
-  //       userClaim: userClaimPDA,
-  //       poolTokenAccount: poolTokenAccount,
-  //       userTokenAccount: userTokenAccount,
-  //       user: userAccount.publicKey,
-  //       tokenProgram: TOKEN_PROGRAM_ID,
-  //       systemProgram: SystemProgram.programId,
-  //     })
-  //     .signers([userAccount])
-  //     .rpc();
-
-  //   const userClaimData = await program.account.userClaim.fetch(userClaimPDA);
-  //   expect(userClaimData.hasClaimed).toBe(true);
-  // });
 });
 
-function tolamports(amount: number): anchor.BN {
+function toLamports(amount: number): number {
   return amount * LAMPORTS_PER_SOL;
 }
+
+//   // Test claiming tokens
+//   it('Claims tokens from the airdrop pool', async () => {
+//     const [userClaimPDA, __] = await PublicKey.findProgramAddressSync(
+//       [userAccount.publicKey.toBuffer(), Buffer.from("user_claim")],
+//       program.programId
+//     );
+
+//     await program.methods
+//       .claimTokens(new anchor.BN(tolamports(1000)))
+//       .accountsStrict({
+//         pool: poolPDA,
+//         userClaim: userClaimPDA,
+//         poolTokenAccount: poolTokenAccount,
+//         userTokenAccount: userTokenAccount,
+//         user: userAccount.publicKey,
+//         mint,
+//         tokenProgram: TOKEN_PROGRAM_ID,
+//         systemProgram: SystemProgram.programId,
+//       })
+//       .signers([userAccount])
+//       .rpc();
+
+//     const userClaimData = await program.account.userClaim.fetch(userClaimPDA);
+//     expect(userClaimData.hasClaimed).toBe(true);
+//   });

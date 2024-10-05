@@ -22,7 +22,6 @@
       "accounts": [
         {
           "name": "pool",
-          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -55,35 +54,43 @@
           }
         },
         {
-          "name": "user_claim",
+          "name": "pool_token_account",
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "user"
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
               },
               {
                 "kind": "const",
                 "value": [
-                  117,
-                  115,
-                  101,
-                  114,
-                  95,
-                  99,
+                  112,
+                  111,
+                  111,
                   108,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
                   97,
-                  105,
-                  109
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116
                 ]
               }
             ]
           }
-        },
-        {
-          "name": "pool_token_account",
-          "writable": true
         },
         {
           "name": "user_token_account",
@@ -171,7 +178,42 @@
         },
         {
           "name": "pool_token_account",
-          "writable": true
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116
+                ]
+              }
+            ]
+          }
         },
         {
           "name": "mint"
@@ -206,19 +248,6 @@
         85,
         148
       ]
-    },
-    {
-      "name": "UserClaim",
-      "discriminator": [
-        228,
-        142,
-        195,
-        181,
-        228,
-        147,
-        32,
-        209
-      ]
     }
   ],
   "errors": [
@@ -247,18 +276,6 @@
           {
             "name": "authority",
             "type": "pubkey"
-          }
-        ]
-      }
-    },
-    {
-      "name": "UserClaim",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "has_claimed",
-            "type": "bool"
           }
         ]
       }

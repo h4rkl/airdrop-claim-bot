@@ -14,119 +14,6 @@ export type Airdrop = {
   },
   "instructions": [
     {
-      "name": "claimTokens",
-      "discriminator": [
-        108,
-        216,
-        210,
-        231,
-        0,
-        212,
-        42,
-        64
-      ],
-      "accounts": [
-        {
-          "name": "pool",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  105,
-                  114,
-                  100,
-                  114,
-                  111,
-                  112,
-                  95,
-                  112,
-                  111,
-                  111,
-                  108
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "poolTokenAccount",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool"
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "tokenProgram",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "systemProgram",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "initializePool",
       "discriminator": [
         95,
@@ -156,11 +43,6 @@ export type Airdrop = {
               {
                 "kind": "const",
                 "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
                   97,
                   105,
                   114,
@@ -170,7 +52,11 @@ export type Airdrop = {
                   112,
                   95,
                   112,
+                  114,
                   111,
+                  116,
+                  111,
+                  99,
                   111,
                   108
                 ]
@@ -198,24 +84,22 @@ export type Airdrop = {
               {
                 "kind": "const",
                 "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
                   112,
-                  111,
-                  111,
-                  108,
                   95,
+                  112,
+                  114,
+                  111,
                   116,
                   111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  97,
-                  99,
                   99,
                   111,
-                  117,
-                  110,
-                  116
+                  108
                 ]
               }
             ]
@@ -259,7 +143,7 @@ export type Airdrop = {
   "errors": [
     {
       "code": 6000,
-      "name": "invalidPoolTokenAccount",
+      "name": "invalidTokenPoolAccount",
       "msg": "Invalid pool token account."
     },
     {

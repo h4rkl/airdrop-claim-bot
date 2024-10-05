@@ -8,119 +8,6 @@
   },
   "instructions": [
     {
-      "name": "claim_tokens",
-      "discriminator": [
-        108,
-        216,
-        210,
-        231,
-        0,
-        212,
-        42,
-        64
-      ],
-      "accounts": [
-        {
-          "name": "pool",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
-                  97,
-                  105,
-                  114,
-                  100,
-                  114,
-                  111,
-                  112,
-                  95,
-                  112,
-                  111,
-                  111,
-                  108
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "pool_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "pool"
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  112,
-                  111,
-                  111,
-                  108,
-                  95,
-                  116,
-                  111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  97,
-                  99,
-                  99,
-                  111,
-                  117,
-                  110,
-                  116
-                ]
-              }
-            ]
-          }
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
       "name": "initialize_pool",
       "discriminator": [
         95,
@@ -150,11 +37,6 @@
               {
                 "kind": "const",
                 "value": [
-                  109,
-                  105,
-                  110,
-                  116,
-                  95,
                   97,
                   105,
                   114,
@@ -164,7 +46,11 @@
                   112,
                   95,
                   112,
+                  114,
                   111,
+                  116,
+                  111,
+                  99,
                   111,
                   108
                 ]
@@ -192,24 +78,22 @@
               {
                 "kind": "const",
                 "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
                   112,
-                  111,
-                  111,
-                  108,
                   95,
+                  112,
+                  114,
+                  111,
                   116,
                   111,
-                  107,
-                  101,
-                  110,
-                  95,
-                  97,
-                  99,
                   99,
                   111,
-                  117,
-                  110,
-                  116
+                  108
                 ]
               }
             ]
@@ -253,7 +137,7 @@
   "errors": [
     {
       "code": 6000,
-      "name": "InvalidPoolTokenAccount",
+      "name": "InvalidTokenPoolAccount",
       "msg": "Invalid pool token account."
     },
     {

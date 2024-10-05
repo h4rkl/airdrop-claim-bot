@@ -33,6 +33,7 @@ describe('Airdrop Program', () => {
   let mint: PublicKey;
   let userAccount: Keypair;
   let userTokenAccount: PublicKey;
+  let userClaim: PublicKey;
   let poolTokenAccount: PublicKey;
   let poolPDA: PublicKey;
 
@@ -96,6 +97,15 @@ describe('Airdrop Program', () => {
       [poolPDA.toBuffer(), mint.toBuffer(), Buffer.from(AIRDROP_PROTOCOL)],
       program.programId
     );
+
+    [userClaim] = PublicKey.findProgramAddressSync(
+      [
+        userAccount.publicKey.toBuffer(),
+        poolPDA.toBuffer(),
+        Buffer.from(AIRDROP_PROTOCOL),
+      ],
+      program.programId
+    );
   });
 
   // Test initializing the pool
@@ -133,31 +143,32 @@ describe('Airdrop Program', () => {
     expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(toLamports(400000)));
   });
 
-  //   // Test claiming tokens
-//   it('Claims tokens from the airdrop pool', async () => {
-//     const [userClaimPDA, __] = await PublicKey.findProgramAddressSync(
-//       [userAccount.publicKey.toBuffer(), Buffer.from("user_claim")],
-//       program.programId
-//     );
+  // Test claiming tokens
+  it('Claims tokens from the airdrop pool', async () => {
+    await program.methods
+      .claimTokens(new anchor.BN(toLamports(1000)))
+      .accountsStrict({
+        pool: poolPDA,
+        userTokenAccount,
+        user: userAccount.publicKey,
+        poolTokenAccount,
+        userClaim,
+        mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([userAccount])
+      .rpc();
 
-//     await program.methods
-//       .claimTokens(new anchor.BN(tolamports(1000)))
-//       .accountsStrict({
-//         pool: poolPDA,
-//         userClaim: userClaimPDA,
-//         poolTokenAccount: poolTokenAccount,
-//         userTokenAccount: userTokenAccount,
-//         user: userAccount.publicKey,
-//         mint,
-//         tokenProgram: TOKEN_PROGRAM_ID,
-//         systemProgram: SystemProgram.programId,
-//       })
-//       .signers([userAccount])
-//       .rpc();
+    const userClaimData = await program.account.userClaim.fetch(userClaim);
+    expect(userClaimData.hasClaimed).toBe(true);
 
-//     const userClaimData = await program.account.userClaim.fetch(userClaimPDA);
-//     expect(userClaimData.hasClaimed).toBe(true);
-//   });
+    const userTokenAccountInfo = await getAccount(
+      provider.connection,
+      userTokenAccount
+    );
+    expect(userTokenAccountInfo.amount).toBe(BigInt(toLamports(1000)));
+  });
 });
 
 function toLamports(amount: number): number {

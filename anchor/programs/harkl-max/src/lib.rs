@@ -29,47 +29,29 @@ mod airdrop {
         Ok(())
     }
 
-    // pub fn claim_tokens(ctx: Context<ClaimTokens>, amount: u64) -> Result<()> {
-    //     let mint_key = ctx.accounts.mint.key();
-    //     let pool_key = ctx.accounts.pool.key();
+    pub fn claim_tokens(ctx: Context<ClaimTokens>, amount: u64) -> Result<()> {
+        require!(
+            !ctx.accounts.user_claim.has_claimed,
+            CustomError::AlreadyClaimed
+        );
+        require!(amount > 1_000_000_000, CustomError::InvalidAmount);
 
-    //     let pool_bump = ctx.bumps.pool;
-    //     let pool_token_account_bump = ctx.bumps.pool_token_account;
+        token::transfer(
+            CpiContext::new(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.pool_token_account.to_account_info(),
+                    to: ctx.accounts.user_token_account.to_account_info(),
+                    authority: ctx.accounts.pool.to_account_info(),
+                },
+            ),
+            amount,
+        )?;
 
-    //     // Use the long-lived variables in the seeds array
-    //     let pool_seeds = &[mint_key.as_ref(), MINT_AIRDROP_POOL, &[pool_bump]];
+        ctx.accounts.user_claim.has_claimed = true;
 
-    //     let pool_token_account_seeds = &[
-    //         pool_key.as_ref(),
-    //         mint_key.as_ref(),
-    //         AIRDROP_PROTOCOL,
-    //         &[pool_token_account_bump],
-    //     ];
-
-    //     // Construct the transfer instruction
-    //     let transfer_instruction = spl_token::instruction::transfer(
-    //         &spl_token::ID,
-    //         &ctx.accounts.pool_token_account.key(),
-    //         &ctx.accounts.user_token_account.key(),
-    //         &ctx.accounts.pool.key(),
-    //         &[],
-    //         amount,
-    //     )?;
-
-    //     // Call the instruction with `invoke_signed` using correct seeds
-    //     anchor_lang::solana_program::program::invoke_signed(
-    //         &transfer_instruction,
-    //         &[
-    //             ctx.accounts.pool_token_account.to_account_info(),
-    //             ctx.accounts.user_token_account.to_account_info(),
-    //             ctx.accounts.pool.to_account_info(),
-    //             ctx.accounts.token_program.to_account_info(),
-    //         ],
-    //         &[pool_seeds, pool_token_account_seeds],
-    //     )?;
-
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }
 
 // Define the account structures
@@ -80,6 +62,7 @@ pub struct AirdropPool {
 
 #[account]
 pub struct UserClaim {
+    pub user: Pubkey,
     pub has_claimed: bool,
 }
 
@@ -107,12 +90,29 @@ pub struct InitializePool<'info> {
 
 #[derive(Accounts)]
 pub struct ClaimTokens<'info> {
-    #[account(seeds = [mint.key().as_ref(), b"mint_airdrop_pool"], bump)]
+    #[account(seeds = [mint.key().as_ref(), AIRDROP_PROTOCOL], bump)]
     pub pool: Account<'info, AirdropPool>,
     #[account(mut)]
     pub user_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub user: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [pool.key().as_ref(), mint.key().as_ref(), AIRDROP_PROTOCOL],
+        bump,
+    )]
+    pub pool_token_account: Account<'info, TokenAccount>,
+    #[account(
+        init_if_needed,
+        payer = user,
+        space = 8 + std::mem::size_of::<UserClaim>(),
+        seeds = [user.key().as_ref(), pool.key().as_ref(), AIRDROP_PROTOCOL],
+        bump,
+    )]
+    pub user_claim: Account<'info, UserClaim>,
+    /// CHECK: This is not dangerous because we don't read or write from this account
+    #[account(seeds = [AIRDROP_PROTOCOL], bump)]
+    pub pool_authority: UncheckedAccount<'info>,
     pub mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -127,4 +127,6 @@ pub enum CustomError {
     InvalidPoolAddress,
     #[msg("User has already claimed their tokens.")]
     AlreadyClaimed,
+    #[msg("Invalid amount.")]
+    InvalidAmount,
 }

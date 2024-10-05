@@ -21,7 +21,7 @@
       ],
       "accounts": [
         {
-          "name": "pool",
+          "name": "pool_authority",
           "pda": {
             "seeds": [
               {
@@ -68,7 +68,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "pool_authority"
               },
               {
                 "kind": "account",
@@ -109,7 +109,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "pool_authority"
               },
               {
                 "kind": "const",
@@ -173,7 +173,7 @@
           "signer": true
         },
         {
-          "name": "pool",
+          "name": "pool_authority",
           "writable": true,
           "pda": {
             "seeds": [
@@ -216,7 +216,7 @@
             "seeds": [
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "pool_authority"
               },
               {
                 "kind": "account",

@@ -27,7 +27,7 @@ export type Airdrop = {
       ],
       "accounts": [
         {
-          "name": "pool",
+          "name": "poolAuthority",
           "pda": {
             "seeds": [
               {
@@ -74,7 +74,7 @@ export type Airdrop = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "poolAuthority"
               },
               {
                 "kind": "account",
@@ -115,7 +115,7 @@ export type Airdrop = {
               },
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "poolAuthority"
               },
               {
                 "kind": "const",
@@ -179,7 +179,7 @@ export type Airdrop = {
           "signer": true
         },
         {
-          "name": "pool",
+          "name": "poolAuthority",
           "writable": true,
           "pda": {
             "seeds": [
@@ -222,7 +222,7 @@ export type Airdrop = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "pool"
+                "path": "poolAuthority"
               },
               {
                 "kind": "account",

@@ -125,10 +125,56 @@ export type Airdrop = {
       ],
       "accounts": [
         {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
           "name": "pool",
           "writable": true,
           "pda": {
             "seeds": [
+              {
+                "kind": "account",
+                "path": "authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  243,
+                  169,
+                  89,
+                  146,
+                  86,
+                  56,
+                  144,
+                  169,
+                  32,
+                  223,
+                  205,
+                  10,
+                  72,
+                  176,
+                  73,
+                  31,
+                  21,
+                  47,
+                  11,
+                  109,
+                  43,
+                  185,
+                  1,
+                  5,
+                  204,
+                  61,
+                  11,
+                  38,
+                  194,
+                  173,
+                  208,
+                  66
+                ]
+              },
               {
                 "kind": "const",
                 "value": [
@@ -150,11 +196,6 @@ export type Airdrop = {
           }
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
           "name": "from",
           "writable": true
         },
@@ -163,16 +204,15 @@ export type Airdrop = {
           "writable": true
         },
         {
+          "name": "mint"
+        },
+        {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "rent",
-          "address": "SysvarRent111111111111111111111111111111111"
         }
       ],
       "args": [
@@ -214,6 +254,16 @@ export type Airdrop = {
   "errors": [
     {
       "code": 6000,
+      "name": "invalidPoolTokenAccount",
+      "msg": "Invalid pool token account."
+    },
+    {
+      "code": 6001,
+      "name": "invalidPoolAddress",
+      "msg": "Invalid pool address."
+    },
+    {
+      "code": 6002,
       "name": "alreadyClaimed",
       "msg": "User has already claimed their tokens."
     }
@@ -227,10 +277,6 @@ export type Airdrop = {
           {
             "name": "authority",
             "type": "pubkey"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           }
         ]
       }

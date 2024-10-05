@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, TokenAccount, Token, Mint, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
 declare_id!("HQ9qykbDvtGPm5LtLzCyn25ntRwi9DePTevwA6o9mXAZ");
 
@@ -9,15 +9,35 @@ mod airdrop {
 
     // Initialize the airdrop pool account with a certain amount of tokens
     pub fn initialize_pool(ctx: Context<InitializePool>, amount: u64) -> Result<()> {
-        let pool = &mut ctx.accounts.pool;
-        pool.authority = *ctx.accounts.authority.key;
-        pool.bump = ctx.bumps.pool;
+        let (pool_pda, _bump) = Pubkey::find_program_address(
+            &[
+                ctx.accounts.authority.key.as_ref(),
+                crate::ID.as_ref(),
+                b"airdrop_pool",
+            ],
+            &crate::ID,
+        );
 
-        // Transfer the specified amount of tokens to the airdrop pool
-        token::transfer(
-            ctx.accounts.into_transfer_to_pool_context(),
-            amount,
-        )?;
+        require!(
+            ctx.accounts.pool.key() == pool_pda,
+            CustomError::InvalidPoolAddress
+        );
+
+        let pool_token_account = anchor_spl::associated_token::get_associated_token_address(
+            &pool_pda,
+            &ctx.accounts.mint.key()
+        );
+        
+        // Verify that the provided pool_token_account matches the expected address
+        require!(
+            ctx.accounts.pool_token_account.key() == pool_token_account,
+            CustomError::InvalidPoolTokenAccount
+        );
+
+        ctx.accounts.pool.authority = *ctx.accounts.authority.key;
+
+        // Transfer tokens to the pool's token account
+        token::transfer(ctx.accounts.into_transfer_to_pool_context(), amount)?;
 
         Ok(())
     }
@@ -33,10 +53,7 @@ mod airdrop {
         user_claim.has_claimed = true;
 
         // Transfer tokens from the pool to the user
-        token::transfer(
-            ctx.accounts.into_transfer_to_user_context(),
-            amount,
-        )?;
+        token::transfer(ctx.accounts.into_transfer_to_user_context(), amount)?;
 
         Ok(())
     }
@@ -45,8 +62,7 @@ mod airdrop {
 // Define the account structures
 #[account]
 pub struct AirdropPool {
-    pub authority: Pubkey,   // The authority (admin) of the pool
-    pub bump: u8,            // PDA bump
+    pub authority: Pubkey,
 }
 
 #[account]
@@ -57,17 +73,17 @@ pub struct UserClaim {
 // Context for initializing the airdrop pool
 #[derive(Accounts)]
 pub struct InitializePool<'info> {
-    #[account(init, payer = authority, space = 8 + 32 + 1, seeds = [b"airdrop_pool"], bump)]
-    pub pool: Account<'info, AirdropPool>,
     #[account(mut)]
     pub authority: Signer<'info>,
+    #[account(init, payer = authority, space = 8 + 32, seeds = [authority.key().as_ref(), crate::ID.as_ref(), b"airdrop_pool"], bump)]
+    pub pool: Account<'info, AirdropPool>,
     #[account(mut)]
     pub from: Account<'info, TokenAccount>,
     #[account(mut)]
     pub pool_token_account: Account<'info, TokenAccount>,
+    pub mint: Box<Account<'info, Mint>>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 impl<'info> InitializePool<'info> {
@@ -84,7 +100,7 @@ impl<'info> InitializePool<'info> {
 // Context for claiming tokens
 #[derive(Accounts)]
 pub struct ClaimTokens<'info> {
-    #[account(mut, seeds = [b"airdrop_pool"], bump = pool.bump)]
+    #[account(mut, seeds = [b"airdrop_pool"], bump)]
     pub pool: Account<'info, AirdropPool>,
     #[account(init_if_needed, payer = user, space = 8 + 1, seeds = [user.key().as_ref(), b"user_claim"], bump)]
     pub user_claim: Account<'info, UserClaim>,
@@ -113,6 +129,10 @@ impl<'info> ClaimTokens<'info> {
 // Custom error for handling already claimed tokens
 #[error_code]
 pub enum CustomError {
+    #[msg("Invalid pool token account.")]
+    InvalidPoolTokenAccount,
+    #[msg("Invalid pool address.")]
+    InvalidPoolAddress,
     #[msg("User has already claimed their tokens.")]
     AlreadyClaimed,
 }

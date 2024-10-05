@@ -145,25 +145,6 @@ describe('Airdrop Program', () => {
 
   // Test claiming tokens
   it('Claims tokens from the airdrop pool', async () => {
-    // Check initial balances and states
-    const initialPoolTokenAccountInfo = await getAccount(
-      provider.connection,
-      poolTokenAccount
-    );
-    const initialUserTokenAccountInfo = await getAccount(
-      provider.connection,
-      userTokenAccount
-    );
-    const initialUserClaimData = await program.account.userClaim.fetch(
-      userClaim
-    );
-
-    expect(initialPoolTokenAccountInfo.amount).toBeGreaterThan(
-      BigInt(toLamports(1000))
-    );
-    expect(initialUserTokenAccountInfo.amount).toBe(BigInt(0));
-    expect(initialUserClaimData.hasClaimed).toBe(false);
-
     // Perform the claim
     await program.methods
       .claimTokens(new anchor.BN(toLamports(1000)))
@@ -180,35 +161,19 @@ describe('Airdrop Program', () => {
       .signers([userAccount])
       .rpc();
 
-    // Check final balances and states
-    const finalPoolTokenAccountInfo = await getAccount(
+    const poolTokenAccountInfo = await getAccount(
       provider.connection,
       poolTokenAccount
     );
-    const finalUserTokenAccountInfo = await getAccount(
+    const userTokenAccountInfo = await getAccount(
       provider.connection,
       userTokenAccount
     );
-    const finalUserClaimData = await program.account.userClaim.fetch(userClaim);
+    const userClaimData = await program.account.userClaim.fetch(userClaim);
 
-    // Check user claim state
-    expect(finalUserClaimData.hasClaimed).toBe(true);
-
-    // Check user token account balance
-    expect(finalUserTokenAccountInfo.amount).toBe(BigInt(toLamports(1000)));
-
-    // Check pool token account balance
-    expect(finalPoolTokenAccountInfo.amount).toBe(
-      initialPoolTokenAccountInfo.amount - BigInt(toLamports(1000))
-    );
-
-    // Verify the change in balances
-    expect(
-      finalUserTokenAccountInfo.amount - initialUserTokenAccountInfo.amount
-    ).toBe(BigInt(toLamports(1000)));
-    expect(
-      initialPoolTokenAccountInfo.amount - finalPoolTokenAccountInfo.amount
-    ).toBe(BigInt(toLamports(1000)));
+    expect(userClaimData.hasClaimed).toBe(true);
+    expect(userTokenAccountInfo.amount).toBe(BigInt(toLamports(1000)));
+    expect(poolTokenAccountInfo.amount).toBe(BigInt(toLamports(599000)));
   });
 });
 

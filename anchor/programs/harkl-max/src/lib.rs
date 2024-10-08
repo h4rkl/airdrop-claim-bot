@@ -1,10 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
+pub mod errors;
+
 declare_id!("HQ9qykbDvtGPm5LtLzCyn25ntRwi9DePTevwA6o9mXAZ");
 
 #[program]
 mod airdrop {
+    use errors::CustomError;
+
     use super::*;
 
     pub const AIRDROP_PROTOCOL: &[u8] = b"airdrop_protocol";
@@ -122,15 +126,4 @@ pub struct ClaimTokens<'info> {
     pub system_program: Program<'info, System>,
 }
 
-// Custom error for handling already claimed tokens
-#[error_code]
-pub enum CustomError {
-    #[msg("Invalid pool token account.")]
-    InvalidTokenPoolAccount,
-    #[msg("Invalid pool address.")]
-    InvalidPoolAddress,
-    #[msg("User has already claimed their tokens.")]
-    AlreadyClaimed,
-    #[msg("Invalid amount.")]
-    InvalidAmount,
-}
+

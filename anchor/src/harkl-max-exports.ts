@@ -1,27 +1,27 @@
 // Here we export some useful types and functions for interacting with the Anchor program.
 import { AnchorProvider, Program } from '@coral-xyz/anchor';
 import { Cluster, PublicKey } from '@solana/web3.js';
-import HarklMaxIDL from '../target/idl/harkl_max.json';
-import type { HarklMax } from '../target/types/harkl_max';
+import AirdropIDL from '../target/idl/airdrop.json';
+import type { Airdrop } from '../target/types/airdrop';
 
 // Re-export the generated IDL and type
-export { HarklMax, HarklMaxIDL };
+export { Airdrop, AirdropIDL };
 
 // The programId is imported from the program IDL.
-export const HARKL_MAX_PROGRAM_ID = new PublicKey(HarklMaxIDL.address);
+export const AIRDROP_PROGRAM_ID = new PublicKey(AirdropIDL.address);
 
-// This is a helper function to get the HarklMax Anchor program.
-export function getHarklMaxProgram(provider: AnchorProvider) {
-  return new Program(HarklMaxIDL as HarklMax, provider);
+// This is a helper function to get the Airdrop Anchor program.
+export function getAirdropProgram(provider: AnchorProvider) {
+  return new Program(AirdropIDL as Airdrop, provider);
 }
 
-// This is a helper function to get the program ID for the HarklMax program depending on the cluster.
-export function getHarklMaxProgramId(cluster: Cluster) {
+// This is a helper function to get the program ID for the Airdrop program depending on the cluster.
+export function getAirdropProgramId(cluster: Cluster) {
   switch (cluster) {
     case 'devnet':
     case 'testnet':
     case 'mainnet-beta':
     default:
-      return HARKL_MAX_PROGRAM_ID;
+      return AIRDROP_PROGRAM_ID;
   }
 }

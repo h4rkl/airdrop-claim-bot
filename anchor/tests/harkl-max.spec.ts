@@ -16,43 +16,43 @@ import {
 import { Airdrop } from '../target/types/airdrop';
 
 const AIRDROP_PROTOCOL = 'airdrop_protocol';
+const CLAIM_ALLOCATION = 'claim_allocation';
 
-// Configure the provider to use the local cluster
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 
-// Load the program
 const program = anchor.workspace.Airdrop as Program<Airdrop>;
 
-// Define the Jest tests
-describe('Airdrop Program', () => {
+describe('Airdrop security', () => {
   let poolOwner: Keypair;
-  let poolOwnerTokenAccount: PublicKey;
-  let mint: PublicKey;
   let userAccount: Keypair;
+  let attacker: Keypair;
+  let poolOwnerTokenAccount: PublicKey;
   let userTokenAccount: PublicKey;
-  let userClaim: PublicKey;
+  let mint: PublicKey;
   let poolTokenAccount: PublicKey;
   let poolPDA: PublicKey;
+  let poolAccounting: PublicKey;
+  let claimAllocation: PublicKey;
 
-  // Before all tests, set up accounts and mint tokens
+  const poolAmount = toBaseUnits(600_000);
+  const allocationAmount = toBaseUnits(1_000);
+
   beforeAll(async () => {
     poolOwner = Keypair.generate();
     userAccount = Keypair.generate();
+    attacker = Keypair.generate();
 
-    // Airdrop SOL to pool owner and user
     await Promise.all(
-      [poolOwner, userAccount].map(async (keypair) => {
-        await provider.connection.confirmTransaction(
-          await provider.connection.requestAirdrop(
-            keypair.publicKey,
-            LAMPORTS_PER_SOL
-          )
+      [poolOwner, userAccount, attacker].map(async (keypair) => {
+        const signature = await provider.connection.requestAirdrop(
+          keypair.publicKey,
+          LAMPORTS_PER_SOL
         );
+        await provider.connection.confirmTransaction(signature);
       })
     );
 
-    // Create a mint
     mint = await createMint(
       provider.connection,
       poolOwner,
@@ -60,7 +60,6 @@ describe('Airdrop Program', () => {
       null,
       9
     );
-
     poolOwnerTokenAccount = await createAccount(
       provider.connection,
       poolOwner,
@@ -73,43 +72,40 @@ describe('Airdrop Program', () => {
       mint,
       userAccount.publicKey
     );
-
-    // Fund the pool with some tokens
     await mintTo(
       provider.connection,
       poolOwner,
       mint,
       poolOwnerTokenAccount,
       poolOwner.publicKey,
-      toLamports(1000000)
+      toBaseUnits(1_000_000)
     );
 
-    // Calculate the PDA for the pool
     [poolPDA] = PublicKey.findProgramAddressSync(
       [mint.toBuffer(), Buffer.from(AIRDROP_PROTOCOL)],
       program.programId
     );
-
-    // Get the associated token address for the pool PDA
     [poolTokenAccount] = PublicKey.findProgramAddressSync(
       [poolPDA.toBuffer(), mint.toBuffer(), Buffer.from(AIRDROP_PROTOCOL)],
       program.programId
     );
-
-    [userClaim] = PublicKey.findProgramAddressSync(
+    [claimAllocation] = PublicKey.findProgramAddressSync(
       [
         userAccount.publicKey.toBuffer(),
         poolPDA.toBuffer(),
-        Buffer.from(AIRDROP_PROTOCOL),
+        Buffer.from(CLAIM_ALLOCATION),
       ],
+      program.programId
+    );
+    [poolAccounting] = PublicKey.findProgramAddressSync(
+      [poolPDA.toBuffer(), Buffer.from('pool_accounting')],
       program.programId
     );
   });
 
-  // Test initializing the pool
-  it('Initializes the airdrop pool', async () => {
+  it('initializes a pool controlled by the mint authority', async () => {
     await program.methods
-      .initializePool(new anchor.BN(toLamports(600000)))
+      .initializePool(new anchor.BN(poolAmount))
       .accountsStrict({
         authority: poolOwner.publicKey,
         poolAuthority: poolPDA,
@@ -122,59 +118,135 @@ describe('Airdrop Program', () => {
       .signers([poolOwner])
       .rpc();
 
-    // Fetch the pool account data and check that the authority is set correctly
-    const poolAccountData = await program.account.airdropPool.fetch(poolPDA);
-    expect(poolAccountData.authority.equals(poolOwner.publicKey)).toBe(true);
-
-    // Check pool token account balance
-    const poolTokenAccountInfo = await getAccount(
-      provider.connection,
-      poolTokenAccount
+    const pool = await program.account.airdropPool.fetch(poolPDA);
+    expect(pool.authority.equals(poolOwner.publicKey)).toBe(true);
+    expect((await getAccount(provider.connection, poolTokenAccount)).amount).toBe(
+      BigInt(poolAmount)
     );
-    expect(poolTokenAccountInfo.amount).toBe(BigInt(toLamports(600000)));
-
-    // Check pool owner token account balance
-    const poolOwnerTokenAccountInfo = await getAccount(
-      provider.connection,
-      poolOwnerTokenAccount
-    );
-    expect(poolOwnerTokenAccountInfo.amount).toBe(BigInt(toLamports(400000)));
   });
 
-  // Test claiming tokens
-  it('Claims tokens from the airdrop pool', async () => {
-    // Perform the claim
+  it('rejects an unapproved allocator and allocations above the pool balance', async () => {
+    await expect(
+      program.methods
+        .registerClaim(new anchor.BN(allocationAmount))
+        .accountsStrict({
+          poolAuthority: poolPDA,
+          authority: attacker.publicKey,
+          poolTokenAccount,
+          poolAccounting,
+          user: userAccount.publicKey,
+          claimAllocation,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([attacker])
+        .rpc()
+    ).rejects.toThrow();
+
+    await expect(
+      program.methods
+        .registerClaim(new anchor.BN(poolAmount + 1))
+        .accountsStrict({
+          poolAuthority: poolPDA,
+          authority: poolOwner.publicKey,
+          poolTokenAccount,
+          poolAccounting,
+          user: userAccount.publicKey,
+          claimAllocation,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([poolOwner])
+        .rpc()
+    ).rejects.toThrow();
+  });
+
+  it('lets a recipient claim only its administrator-approved amount once', async () => {
     await program.methods
-      .claimTokens(new anchor.BN(toLamports(1000)))
+      .registerClaim(new anchor.BN(allocationAmount))
+      .accountsStrict({
+        poolAuthority: poolPDA,
+        authority: poolOwner.publicKey,
+        poolTokenAccount,
+        poolAccounting,
+        user: userAccount.publicKey,
+        claimAllocation,
+        mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([poolOwner])
+      .rpc();
+
+    const allocation = await program.account.claimAllocation.fetch(claimAllocation);
+    expect(allocation.amount.toNumber()).toBe(allocationAmount);
+    expect(allocation.hasClaimed).toBe(false);
+
+    await program.methods
+      .claimTokens()
       .accountsStrict({
         poolAuthority: poolPDA,
         userTokenAccount,
         user: userAccount.publicKey,
         poolTokenAccount,
-        userClaim,
+        poolAccounting,
+        claimAllocation,
         mint,
         tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
       })
       .signers([userAccount])
       .rpc();
 
-    const poolTokenAccountInfo = await getAccount(
-      provider.connection,
-      poolTokenAccount
+    const accounting = await program.account.poolAccounting.fetch(poolAccounting);
+    expect(accounting.totalAllocated.toNumber()).toBe(allocationAmount);
+    expect(accounting.totalClaimed.toNumber()).toBe(allocationAmount);
+    expect((await getAccount(provider.connection, userTokenAccount)).amount).toBe(
+      BigInt(allocationAmount)
     );
-    const userTokenAccountInfo = await getAccount(
-      provider.connection,
-      userTokenAccount
+    expect((await getAccount(provider.connection, poolTokenAccount)).amount).toBe(
+      BigInt(poolAmount - allocationAmount)
     );
-    const userClaimData = await program.account.userClaim.fetch(userClaim);
 
-    expect(userClaimData.hasClaimed).toBe(true);
-    expect(userTokenAccountInfo.amount).toBe(BigInt(toLamports(1000)));
-    expect(poolTokenAccountInfo.amount).toBe(BigInt(toLamports(599000)));
+    await expect(
+      program.methods
+        .claimTokens()
+        .accountsStrict({
+          poolAuthority: poolPDA,
+          userTokenAccount,
+          user: userAccount.publicKey,
+          poolTokenAccount,
+          poolAccounting,
+          claimAllocation,
+          mint,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([userAccount])
+        .rpc()
+    ).rejects.toThrow();
+
+    await program.methods
+      .withdrawUnallocated(new anchor.BN(poolAmount - allocationAmount))
+      .accountsStrict({
+        poolAuthority: poolPDA,
+        authority: poolOwner.publicKey,
+        poolTokenAccount,
+        poolAccounting,
+        destination: poolOwnerTokenAccount,
+        mint,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([poolOwner])
+      .rpc();
+
+    expect((await getAccount(provider.connection, poolTokenAccount)).amount).toBe(
+      0n
+    );
   });
 });
 
-function toLamports(amount: number): number {
+function toBaseUnits(amount: number): number {
   return amount * LAMPORTS_PER_SOL;
 }

@@ -9,6 +9,10 @@
   "instructions": [
     {
       "name": "claim_tokens",
+      "docs": [
+        "Transfers exactly the allocation that the pool authority registered for",
+        "the signing recipient. The recipient never supplies a claim amount."
+      ],
       "discriminator": [
         108,
         216,
@@ -22,6 +26,7 @@
       "accounts": [
         {
           "name": "pool_authority",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -50,7 +55,11 @@
                 ]
               }
             ]
-          }
+          },
+          "relations": [
+            "pool_accounting",
+            "claim_allocation"
+          ]
         },
         {
           "name": "user_token_account",
@@ -59,7 +68,10 @@
         {
           "name": "user",
           "writable": true,
-          "signer": true
+          "signer": true,
+          "relations": [
+            "claim_allocation"
+          ]
         },
         {
           "name": "pool_token_account",
@@ -99,7 +111,39 @@
           }
         },
         {
-          "name": "user_claim",
+          "name": "pool_accounting",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "claim_allocation",
           "writable": true,
           "pda": {
             "seeds": [
@@ -114,22 +158,22 @@
               {
                 "kind": "const",
                 "value": [
+                  99,
+                  108,
                   97,
                   105,
-                  114,
-                  100,
-                  114,
-                  111,
-                  112,
+                  109,
                   95,
-                  112,
-                  114,
-                  111,
-                  116,
+                  97,
+                  108,
+                  108,
                   111,
                   99,
+                  97,
+                  116,
+                  105,
                   111,
-                  108
+                  110
                 ]
               }
             ]
@@ -141,18 +185,9 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
         }
       ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
+      "args": []
     },
     {
       "name": "initialize_pool",
@@ -264,6 +299,484 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "register_claim",
+      "docs": [
+        "Creates one immutable, fixed-size allocation for a recipient.",
+        "Only the pool authority can call this instruction."
+      ],
+      "discriminator": [
+        3,
+        124,
+        156,
+        228,
+        6,
+        66,
+        235,
+        165
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  95,
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool_authority"
+          ]
+        },
+        {
+          "name": "pool_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  95,
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_accounting",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user"
+        },
+        {
+          "name": "claim_allocation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  95,
+                  97,
+                  108,
+                  108,
+                  111,
+                  99,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "revoke_claim",
+      "docs": [
+        "Cancels an unclaimed allocation, releasing its reserved balance back to",
+        "the pool administrator. This also lets an administrator correct a",
+        "mistyped recipient address."
+      ],
+      "discriminator": [
+        182,
+        1,
+        142,
+        33,
+        207,
+        153,
+        37,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  95,
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          },
+          "relations": [
+            "pool_accounting",
+            "claim_allocation"
+          ]
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool_authority"
+          ]
+        },
+        {
+          "name": "pool_accounting",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "user",
+          "relations": [
+            "claim_allocation"
+          ]
+        },
+        {
+          "name": "claim_allocation",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "user"
+              },
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  108,
+                  97,
+                  105,
+                  109,
+                  95,
+                  97,
+                  108,
+                  108,
+                  111,
+                  99,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "mint"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw_unallocated",
+      "docs": [
+        "Returns tokens that are not reserved by an outstanding allocation to",
+        "the pool authority. Reserved allocations can never be withdrawn."
+      ],
+      "discriminator": [
+        226,
+        26,
+        221,
+        64,
+        218,
+        61,
+        68,
+        231
+      ],
+      "accounts": [
+        {
+          "name": "pool_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  95,
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "pool_authority"
+          ]
+        },
+        {
+          "name": "pool_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  105,
+                  114,
+                  100,
+                  114,
+                  111,
+                  112,
+                  95,
+                  112,
+                  114,
+                  111,
+                  116,
+                  111,
+                  99,
+                  111,
+                  108
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "pool_accounting",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "pool_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  111,
+                  111,
+                  108,
+                  95,
+                  97,
+                  99,
+                  99,
+                  111,
+                  117,
+                  110,
+                  116,
+                  105,
+                  110,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -281,16 +794,29 @@
       ]
     },
     {
-      "name": "UserClaim",
+      "name": "ClaimAllocation",
       "discriminator": [
-        228,
-        142,
-        195,
-        181,
-        228,
-        147,
-        32,
-        209
+        220,
+        150,
+        59,
+        15,
+        166,
+        91,
+        1,
+        180
+      ]
+    },
+    {
+      "name": "PoolAccounting",
+      "discriminator": [
+        116,
+        119,
+        138,
+        77,
+        176,
+        222,
+        253,
+        233
       ]
     }
   ],
@@ -314,6 +840,31 @@
       "code": 6003,
       "name": "InvalidAmount",
       "msg": "Invalid amount."
+    },
+    {
+      "code": 6004,
+      "name": "Unauthorized",
+      "msg": "The signer is not authorized to administer this pool."
+    },
+    {
+      "code": 6005,
+      "name": "InvalidMintAuthority",
+      "msg": "The pool initializer must be the mint authority."
+    },
+    {
+      "code": 6006,
+      "name": "InsufficientPoolBalance",
+      "msg": "The pool does not have enough unallocated tokens."
+    },
+    {
+      "code": 6007,
+      "name": "InvalidClaimAllocation",
+      "msg": "Claim allocation does not match the claimant or pool."
+    },
+    {
+      "code": 6008,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow."
     }
   ],
   "types": [
@@ -330,7 +881,7 @@
       }
     },
     {
-      "name": "UserClaim",
+      "name": "ClaimAllocation",
       "type": {
         "kind": "struct",
         "fields": [
@@ -339,8 +890,40 @@
             "type": "pubkey"
           },
           {
+            "name": "pool_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
             "name": "has_claimed",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PoolAccounting",
+      "docs": [
+        "Versioned accounting is intentionally separate from `AirdropPool` so an",
+        "upgrade does not change the layout of already-initialized pool accounts."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "pool_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_allocated",
+            "type": "u64"
+          },
+          {
+            "name": "total_claimed",
+            "type": "u64"
           }
         ]
       }

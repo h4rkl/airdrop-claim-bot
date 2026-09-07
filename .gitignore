@@ -4,6 +4,14 @@
 dist
 tmp
 /out-tsc
+*.tsbuildinfo
+# build and tool caches
+.cache/
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.turbo/
+.swc/
 # dependencies
 node_modules
 # IDEs and editors
@@ -14,6 +22,12 @@ node_modules
 *.launch
 .settings/
 *.sublime-workspace
+*.code-workspace
+*.iml
+*.swp
+*.swo
+*~
+.fleet/
 # IDE - VSCode
 .vscode/*
 !.vscode/settings.json
@@ -27,8 +41,23 @@ node_modules
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
+pnpm-debug.log*
+lerna-debug.log*
+*.log
 testem.log
 /typings
+# local configuration and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+.direnv/
+# package-manager stores
+.pnpm-store/
+# process files
+pids/
+*.pid
+*.pid.lock
 # System Files
 .DS_Store
 Thumbs.db
@@ -38,7 +67,7 @@ Thumbs.db
 anchor/target/deploy
 anchor/target/debug
 anchor/target/release
-anchor/target/sbf-solana-solana
+anchor/target/sbpf-solana-solana
 anchor/target/.rustc_info.json
 !anchor/target/idl/*.json
 !anchor/target/types/*.ts

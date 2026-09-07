@@ -24,6 +24,11 @@ export default {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
+  // web3.js 1.98+ resolves rpc-websockets' ESM-only uuid build. Transform it
+  // for Jest's CommonJS runtime instead of executing it from node_modules.
+  transformIgnorePatterns: [
+    'node_modules/(?!uuid/|.*rpc-websockets/node_modules/uuid/)',
+  ],
   moduleFileExtensions: ['ts', 'js', 'html'],
   testEnvironment: '',
   coverageDirectory: '../coverage/anchor',
